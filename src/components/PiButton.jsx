@@ -1,32 +1,51 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedGestureHandler, useAnimatedStyle, withTiming, runOnJS, withDelay } from 'react-native-reanimated'
 import { PanGestureHandler } from 'react-native-gesture-handler'
+import PropTypes from 'prop-types'
 
-const PiButton = () => {
-    const numberOfButtons = 10
-    const maxMaskSize = 300
-    const minMaskSize = 50
-    const minMaskBorderRadius = 20
-    const [minActivateRadius, maxActivateRadius] = [70, 150]
-    const mainButtonComponent = null
-    const delayMask = 300
-    const enableMainButtonfunction = true
-    const functionArray = [
-        () => { alert(1) },
-        () => { alert(2) },
-        () => { alert(3) },
-        () => { alert(4) },
-        () => { alert(5) },
-        () => { alert(6) },
-        () => { alert(7) },
-        () => { alert(8) },
-        () => { alert(9) },
-        () => { alert(10) },
-    ]
+const Error = () => (
+    <View style={styles.errorBox}>
+        <Text style={styles.errorText}>Error</Text>
+    </View>
+)
 
+const PiButton = ({
+    numberOfButtons,
+    maxMaskSize,
+    minMaskSize,
+    minMaskBorderRadius,
+    minActivateRadius,
+    maxActivateRadius,
+    mainButtonComponent,
+    delayMask,
+    enableMainButtonfunction,
+    mainButtonFunction,
+    buttonContainerStyle,
+    buttonContentComponentArray,
+    functionArray }
+) => {
+    if (functionArray && typeof functionArray !== 'object') { console.warn('The prop "mainButtonFunction" must be a function'); return <Error /> }
+    if (mainButtonFunction && typeof mainButtonFunction !== 'function') { console.warn('The prop "mainButtonFunction" must be a function'); return <Error /> }
+    if (buttonContentComponentArray !== undefined) {
+        if (typeof buttonContentComponentArray !== 'object') { console.warn('The prop "buttonContentComponentArray" must be an array.'); return <Error /> }
+        for (let element of buttonContentComponentArray) {
+            if (!React.isValidElement(element)) {
+                console.warn('Each element in prop "ButtonContentComponentArray" should be a valid react element.')
+                return <Error />
+            }
+        }
+    }
+    const warningCheck = () => {
+        if (!React.isValidElement(mainButtonComponent)) console.warn('The prop "mainButtonComponent" must be a valid react element.')
+        if (functionArray.length !== numberOfButtons) console.warn('The length of prop "functionArray" does not match "numberOfButtons" ')
+        if (buttonContentComponentArray?.length !== numberOfButtons) console.log('Warning: The length of prop "buttonContentComponentArray" does not match "numberOfButtons" ')
+    }
+    useEffect(() => {
+        warningCheck()
+    }, [])
     const renderArray = new Array(numberOfButtons).fill(0)
-    const [hoveredIndex, setHoveredIndex] = useState(0); // 0 for 'select nothing'
+    const [hoveredIndex, setHoveredIndex] = useState(-1); // -1 for 'select nothing'. 0 for mainButton
     const aniValue = useSharedValue(minMaskSize)
     const aniValueBR = useSharedValue(minMaskBorderRadius)
     const aniStyle = useAnimatedStyle(() => {
@@ -42,6 +61,8 @@ const PiButton = () => {
         onStart: () => {
             aniValue.value = withDelay(delayMask, withTiming(maxMaskSize))
             aniValueBR.value = withDelay(delayMask, withTiming(maxMaskSize / 2))
+            runOnJS(setHoveredIndex)(0)
+            console.log('start')
         },
         onActive: (evt) => {
             let [X, Y] = [evt.x - maxMaskSize / 2, evt.y - maxMaskSize / 2]
@@ -60,7 +81,7 @@ const PiButton = () => {
                 let i = Math.ceil(theta * numberOfButtons / 360)
                 runOnJS(setHoveredIndex)(i)
             }
-            else { runOnJS(setHoveredIndex)(0) }
+            else { runOnJS(setHoveredIndex)(-1) }
         },
         onFinish: (evt) => {
             let i = 0 //functionArray indices start from 0
@@ -73,16 +94,16 @@ const PiButton = () => {
                 i++
             }
 
-            if (aniValue.value == minMaskSize) {
-                console.log('press') // This will trigger if user release the touch before animation start 
+            if (enableMainButtonfunction & hoveredIndex == 0 & aniValue.value === minMaskSize) {
+                // This will trigger if user release the touch before animation start 
+                runOnJS(mainButtonFunction)()
             }
-            runOnJS(setHoveredIndex)(0)
+            runOnJS(setHoveredIndex)(-1)
             aniValue.value = withTiming(minMaskSize)
             aniValueBR.value = withTiming(minMaskBorderRadius)
         },
 
     })
-
     const Btn = function ({ totalCount, index, hoveredIndex, children }) {
         let r = 90
         let pi = 3.14
@@ -90,26 +111,30 @@ const PiButton = () => {
         let x = Math.round(Math.cos(rad) * r)
         let y = Math.round(Math.sin(rad) * r)
         return (
-            <View style={{ opacity: hoveredIndex == index ? 0.2 : 1, transform: [{ translateX: x }, { translateY: y }], position: 'absolute', width: minMaskSize, height: minMaskSize, justifyContent: 'center', alignItems: 'center', borderRadius: 25, backgroundColor: 'skyblue' }}>
-                {children}
-                <Text>{index}</Text>
+            <View style={{ opacity: hoveredIndex == index ? 0.2 : 1, transform: [{ translateX: x }, { translateY: y }], position: 'absolute', }}>
+                {
+                    <View style={[{ justifyContent: 'center', alignItems: 'center' }, buttonContainerStyle]}>
+                        {buttonContentComponentArray && buttonContentComponentArray[index - 1]}
+                    </View>
+                }
             </View>
         )
     }
-
     return (
         // 
         <View style={{ position: 'absolute', justifyContent: 'center', alignItems: 'center', }}>
             {/*  */}
-            <Animated.View style={[aniStyle, { borderWidth: 1, borderColor: 'red', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', position: 'absolute' }]}>
+            <Animated.View style={[aniStyle, { borderWidth: 0, borderColor: 'red', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', position: 'absolute' }]}>
                 <PanGestureHandler onGestureEvent={Handler} >
                     <Animated.View style={{ width: maxMaskSize, height: maxMaskSize, justifyContent: 'center', alignItems: 'center', }}>
-                        {
-                            mainButtonComponent
-                            || <TouchableOpacity style={{ width: minMaskSize, height: minMaskSize, borderWidth: 1, borderRadius: minMaskBorderRadius, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', opacity: 0.8 }} >
-                                <Text>Button</Text>
-                            </TouchableOpacity>
-                        }
+                        <View style={{ opacity: hoveredIndex === 0 ? 0.3 : 1 }}>
+                            {
+                                mainButtonComponent
+                                || <View style={{ width: 50, height: 50, borderWidth: 1, borderRadius: minMaskBorderRadius, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', opacity: 0.8 }} >
+                                    <Text>Press</Text>
+                                </View>
+                            }
+                        </View>
                         {renderArray.map((item, key) => <Btn key={key} totalCount={numberOfButtons} index={key + 1} hoveredIndex={hoveredIndex} />)}
                     </Animated.View>
                 </PanGestureHandler>
@@ -121,3 +146,20 @@ const PiButton = () => {
 export default PiButton
 
 const styles = StyleSheet.create({})
+
+
+PiButton.propTypes = {
+    numberOfButtons: PropTypes.number,
+    minMaskSize: PropTypes.number,
+    minMaskBorderRadius: PropTypes.number,
+    maxMaskSize: PropTypes.number,
+    minActivateRadius: PropTypes.number,
+    maxActivateRadius: PropTypes.number,
+    delayMask: PropTypes.number,
+    mainButtonComponent: PropTypes.node,
+    mainButtonFunction: PropTypes.func,
+    enableMainButtonfunction: PropTypes.bool,
+    buttonContainerStyle: PropTypes.object,
+    buttonContentComponentArray: PropTypes.array,
+    functionArray: PropTypes.array,
+}
