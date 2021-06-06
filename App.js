@@ -28,6 +28,9 @@ export default function App() {
         {/* When all buttons show up, some button may be blocked by other views. If it's a problem for you, try using zIndex or Portals. */}
         <PiButton
           numberOfButtons={4}
+          mainButtonFunction={() => { alert('Main button pressed.') }}
+          buttonContainerStyle={{ borderRadius: 100 }}
+          functionArray={functionArray}
         />
       </View>
       <View style={{ width: '100%', height: 250, backgroundColor: 'gray', justifyContent: 'center', alignItems: 'center', }}>

@@ -111,10 +111,10 @@ const PiButton = ({
         let x = Math.round(Math.cos(rad) * r)
         let y = Math.round(Math.sin(rad) * r)
         return (
-            <View style={{ transform: [{ translateX: x }, { translateY: y }], position: 'absolute', backgroundColor: '#fff', borderRadius: 100 }}>
+            <View style={[{ transform: [{ translateX: x }, { translateY: y }], position: 'absolute', backgroundColor: '#fff' }, buttonContainerStyle]}>
                 <View style={{ opacity: hoveredIndex == index ? 1 : 0.4, }}>
                     {
-                        <View style={[{ justifyContent: 'center', alignItems: 'center' }, buttonContainerStyle]}>
+                        <View style={[{ justifyContent: 'center', alignItems: 'center' }]}>
                             {buttonContentComponentArray ? buttonContentComponentArray[index] : <View style={{ width: 50, height: 50, borderRadius: 50, backgroundColor: '#b7b7a4' }}></View>}
                         </View>
                     }
