@@ -1,12 +1,10 @@
-import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { useSharedValue, useAnimatedGestureHandler, useAnimatedStyle, withTiming, runOnJS, withDelay } from 'react-native-reanimated'
-import { PanGestureHandler } from 'react-native-gesture-handler'
-import PiButton from './src/components/PiButton';
+import React, { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import PiButton from './src/components/AddToCartButton';
 
 export default function App() {
-  const functionArray = [
+  const [render, setRender] = useState(false);
+  const functionArray = useMemo(() => [
     () => { alert(0) },
     () => { alert(1) },
     () => { alert(2) },
@@ -16,27 +14,23 @@ export default function App() {
     () => { alert(6) },
     () => { alert(7) },
     () => { alert(8) },
-    () => { alert(9) },
-  ]
+    () => { alert(9) }
+  ], [])
+
+  const mainFunction = useCallback(() => { alert('Main button pressed.') }, [])
 
   return (
     <View style={styles.container}>
-      <View style={{ width: '100%', height: 300, backgroundColor: 'gray', justifyContent: 'center', alignItems: 'center', }}>
-        <Text>Something else</Text>
-      </View>
+      <Other />
       <View style={{ zIndex: 100 }}>
         {/* When all buttons show up, some button may be blocked by other views. If it's a problem for you, try using zIndex or Portals. */}
         <PiButton
-          numberOfButtons={4}
-          mainButtonFunction={() => { alert('Main button pressed.') }}
-          buttonContainerStyle={{ borderRadius: 100 }}
+          numberOfButtons={10}
+          mainButtonFunction={mainFunction}
           functionArray={functionArray}
         />
       </View>
-      <View style={{ width: '100%', height: 250, backgroundColor: 'gray', justifyContent: 'center', alignItems: 'center', }}>
-        <Text>Something else</Text>
-      </View>
-      <StatusBar style="auto" />
+      <Other {...{ setRender }} />
     </View >
   );
 }
@@ -50,3 +44,12 @@ const styles = StyleSheet.create({
   },
 });
 
+const Other = ({ setRender }) => {
+  return (
+    <View
+      onTouchStart={() => { setRender(prev => !prev) }}
+      style={{ width: '100%', height: 250, backgroundColor: 'gray', justifyContent: 'center', alignItems: 'center', }}>
+      <Text>Something else</Text>
+    </View>
+  )
+}
